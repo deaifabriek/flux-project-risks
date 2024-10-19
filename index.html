@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flux Project Risks</title>
+    <script src="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.js"></script>
+    <link rel="stylesheet" href="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.css">
+    <style>
+        html, body {
+            height: 100%;
+            padding: 10px;
+            margin: 0;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        #gantt_here {
+            width: 100%;
+            height: 100%;
+        }
+
+        .gantt_tooltip {
+            background: #fff;
+            padding: 10px;
+            border: 1px solid #ddd;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            border-radius: 4px;
+            max-width: 200px;
+        }
+
+        #legend {
+            width: 45%;
+            text-align:left;
+            margin: 20px 0px;
+        }
+       
+        #legend caption {
+            margin-top: 20px;
+            caption-side: bottom;
+            text-align: left;
+            font-size: small;
+        }
+
+        .info-pill {
+            background-color: #eee;
+            color: #333;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 12px;
+            display: inline-block;
+        }
+
+        .rag-red {
+            background-color: #ff9999;
+        }
+
+        .rag-amber {
+            background-color: #ffcc99;
+        }
+
+        .rag-green {
+            background-color: #99ff99;
+        }
+
+        
+    </style>
+</head>
+<body>
+    <h1>Flux Project Risk Dashboard</h1>
+
+    <table id="legend">
+        <caption>
+            Risk is calculated by <strong>change of occurence</strong> multiplied by the <strong>consequences</strong>.<br/>
+            <strong>Chance of occurence</strong> is based on an AI assessment based on previous projects.<br/>
+            <strong>Consequences</strong> are based on an AI assessment based on previous projects times the position in the process.<br/>
+            Mitigation will show proposal for impacted process steps.
+        </caption>
+        <thead>
+            <tr>
+                <th>&nbsp;</th>
+                <th>Risk</th>
+                <th>Mitigation</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class='info-pill rag-red'>Task</span></td>
+                <td>High</td>
+                <td>Required</td>
+            </tr>
+            <tr>
+                <td><span class='info-pill rag-amber'>Task</span></td>
+                <td>Medium</td>
+                <td>Advised</td>
+            </tr>
+            <tr>
+                <td><span class='info-pill rag-green'>Task</span></td>
+                <td>Low</td>
+                <td>-</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div id="gantt_here"></div>
+
+    <script>
+        // init gantt
+        gantt.config.readonly = false;
+        gantt.config.drag_progress = false;
+        gantt.config.auto_scheduling = true;
+        gantt.config.auto_scheduling_strict = true;
+        gantt.config.scales = [
+            {unit: "month", step: 1, format: "%M, %Y"}
+        ];
+        
+
+        // add class based on task id
+        gantt.templates.task_class = function(start, end, task) {
+            return "task-" + task.id; 
+        };
+
+        // tooltip settings
+        gantt.templates.tooltip_text = function(start, end, task) {
+            var rag = "";
+            switch (task.rag) {
+                case 'red':
+                    rag += '<b>Risk: </b>High<br/>Mitigation required.<br/>Click here for proposal.';
+                    break;
+                case 'amber':
+                    rag += '<b>Risk: </b>Medium<br/>Mitigation advised.<br/>Click here for proposal.';
+                    break;
+                case 'green':
+                    rag += '<b>Risk: </b>Low<br/>No mitigation needed.';
+                    break;
+            }
+            return "<span style='color:#444'><b>Task:</b> " + task.text + "<br><b>Duration:</b> " + task.duration + " days<br/>" + rag + "</span>";
+        };
+
+        // make sure to enable tooltips
+        gantt.plugins({
+            tooltip: true,
+            auto_scheduling: true   
+        }); 
+
+        // set gantt container id
+        gantt.init("gantt_here");
+
+        // set tasks and task links
+        // @todo make sure the colors are based on the rag
+        // this was done after init but was overridden by dragging the tasks
+        var tasks = {
+            data: [
+                { id: 1, text: "Task 1", start_date: "01-01-2024", duration: 30, progress: 0.6,  helptext: "Info over Taak 1", color:'#ff9999', rag:'red'},
+                { id: 2, text: "Task 2", start_date: "01-02-2024", duration: 15, progress: 0.4,  helptext: "Info over Taak 2", color:'#ff9999', rag:'red'},
+                { id: 3, text: "Task 3", start_date: "16-02-2024", duration: 45, progress: 0.5,  helptext: "Info over Taak 3", color:'#ffcc99', rag:'amber'},
+                { id: 4, text: "Task 4", start_date: "01-04-2024", duration: 30, progress: 0.7,  helptext: "Info over Taak 4", color:'#99ff99', rag:'green'},
+                { id: 5, text: "Task 5", start_date: "01-05-2024", duration: 15, progress: 0.8,  helptext: "Info over Taak 5", color:'#ff9999', rag:'red'},
+                { id: 6, text: "Task 6", start_date: "16-05-2024", duration: 30, progress: 0.5,  helptext: "Info over Taak 6", color:'#ffcc99', rag:'amber'},
+                { id: 7, text: "Task 7", start_date: "15-06-2024", duration: 30, progress: 0.6,  helptext: "Info over Taak 7", color:'#ffcc99', rag:'amber'},
+                { id: 8, text: "Task 8", start_date: "15-07-2024", duration: 15, progress: 0.3,  helptext: "Info over Taak 8", color:'#99ff99', rag:'green'},
+                { id: 9, text: "Task 9", start_date: "01-08-2024", duration: 45, progress: 0.4,  helptext: "Info over Taak 9", color:'#99ff99', rag:'green'},
+              { id: 10, text: "Task 10", start_date: "15-09-2024", duration: 30, progress: 0.5, helptext: "Info over Taak 10", color:'#99ff99', rag:'green'},
+            ],
+            links: [
+                { id: 1, source: 1, target: 2, type: "0" },
+                { id: 2, source: 2, target: 3, type: "0" },
+                { id: 3, source: 3, target: 4, type: "0" },
+                { id: 4, source: 4, target: 5, type: "0" },
+                { id: 5, source: 5, target: 6, type: "0" },
+                { id: 6, source: 6, target: 7, type: "0" },
+                { id: 7, source: 7, target: 8, type: "0" },
+                { id: 8, source: 8, target: 9, type: "0" },
+                { id: 9, source: 9, target: 10, type: "0" }
+            ]
+        };
+
+        // feed tasks to gantt
+        gantt.parse(tasks);
+
+        gantt.eachSuccessor = function(callback, root){
+            if(!this.isTaskExists(root))
+                return;
+            
+            // remember tasks we've already iterated in order to avoid infinite loops
+            var traversedTasks = arguments[2] || {};
+            if(traversedTasks[root]) return;
+            traversedTasks[root] = true;
+            var rootTask = this.getTask(root);
+            var links = rootTask.$source;
+
+            if(links){
+                for(var i=0; i < links.length; i++){
+                var link = this.getLink(links[i]);
+                if(this.isTaskExists(link.target) && !traversedTasks[link.target]){
+                    callback.call(this, this.getTask(link.target));
+            
+                    // iterate the whole branch, not only first-level dependencies
+                    this.eachSuccessor(callback, link.target, traversedTasks);
+                }
+                }
+            }
+        };
+
+        gantt.attachEvent("onTaskDrag", function(id, mode, task, original){
+            var modes = gantt.config.drag_mode;
+            if(mode == modes.move){
+                var diff = task.start_date - original.start_date;
+                gantt.eachSuccessor(function(child){
+                    child.start_date = new Date(+child.start_date + diff);
+                    child.end_date = new Date(+child.end_date + diff);
+                    gantt.refreshTask(child.id, true);
+                },id );
+            }
+            return true;
+        });
+
+        gantt.attachEvent("onAfterTaskDrag", function(id, mode, e){
+            var modes = gantt.config.drag_mode;
+            if(mode == modes.move ){
+                gantt.eachSuccessor(function(child){
+                    child.start_date = gantt.roundDate(child.start_date);
+                    child.end_date = gantt.calculateEndDate(child.start_date, child.duration);
+                    gantt.updateTask(child.id);
+                },id );
+            }
+        });
+        
+    </script>
+</body>
+</html>
