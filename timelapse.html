@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timelapse Gantt Chart</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        .container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .timeline {
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .timeline button {
+            padding: 8px 15px;
+            font-size: 14px;
+            margin: 0 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .timeline button:hover {
+            background-color: #0056b3;
+        }
+        .timeline input[type="range"] {
+            width: 300px;
+            margin: 0 10px;
+        }
+        .timeline span {
+            font-size: 16px;
+            color: #555;
+        }
+        .legend {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+        .legend div {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: #555;
+        }
+        .legend span {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            border-radius: 3px;
+        }
+        .legend .added span {
+            background-color: #4caf50;
+        }
+        .legend .updated span {
+            background-color: #ff9800;
+        }
+        .legend .removed span {
+            background-color: #f44336;
+        }
+        .gantt-chart-container {
+            display: flex;
+            position: relative;
+            background: #fff;
+            border: 1px solid #ccc;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+        }
+        .task-names {
+            width: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            margin-right: 10px;
+            padding: 10px 0;
+            text-align: right;
+            border-right: 1px solid #ccc;
+            font-weight: bold;
+        }
+        .task-names div {
+            height: 40px;
+            line-height: 40px;
+            padding-right: 10px;
+            color: #333;
+            font-size: 14px;
+        }
+        .week-numbers {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            border-bottom: 1px solid #ccc;
+            margin-bottom: 10px;
+            color: #555;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .week-numbers div {
+            text-align: center;
+            padding: 5px 0;
+            border-right: 1px solid #ccc;
+        }
+        .week-numbers div:last-child {
+            border-right: none;
+        }
+        .gantt-chart {
+            position: relative;
+            display: grid;
+            grid-template-rows: repeat(10, 40px); /* 10 tasks */
+            grid-template-columns: repeat(10, 1fr); /* Columns for weeks */
+            padding: 10px 0;
+            flex-grow: 1;
+        }
+        .gantt-chart div {
+            border-right: 1px solid #ccc;
+        }
+        .gantt-chart div:last-child {
+            border-right: none;
+        }
+        .gantt-bar {
+            position: absolute;
+            height: 30px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 0 10px;
+            transition: all 0.5s ease;
+            box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.2); /* Subtle drop shadow */
+            background-color: #f44336; /* Default red background */
+        }
+        .gantt-bar.added {
+            background-color: #4caf50; /* Green for added tasks */
+        }
+        .gantt-bar.updated {
+            background-color: #ff9800; /* Orange for updated tasks */
+        }
+        .gantt-bar.removed {
+            background-color: #f44336; /* Red for removed tasks */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Progressive Gantt Chart Timelapse Viewer</h1>
+        <div class="legend">
+            <div class="added"><span></span>Added</div>
+            <div class="updated"><span></span>Updated</div>
+            <div class="removed"><span></span>Removed</div>
+        </div>
+        <div class="timeline">
+            <button id="previous">Previous</button>
+            <label for="time-slider">Timeline:</label>
+            <input type="range" id="time-slider" min="0" max="4" step="1" value="0">
+            <span id="current-snapshot">Snapshot 0</span>
+            <button id="next">Next</button>
+        </div>
+        <div class="gantt-chart-container">
+            <div class="task-names" id="task-names">
+                <!-- Task names dynamically generated -->
+            </div>
+            <div>
+                <div class="week-numbers" id="week-numbers">
+                    <!-- Week numbers dynamically generated -->
+                </div>
+                <div class="gantt-chart" id="gantt-chart">
+                    <!-- Gantt Bars dynamically generated -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const generateSnapshot = (previous = null, isFirst = false) => {
+            const maxWeeks = 10;
+            let start = 0;
+
+            return Array.from({ length: 10 }, (_, i) => {
+                if (isFirst) {
+                    // First snapshot: Restrict start to week 5 or earlier
+                    const startLimit = Math.min(5, start);
+                    const startWeek = startLimit;
+                    const endWeek = Math.min(startWeek + 2, maxWeeks);
+                    start = endWeek;
+                    return { id: i + 1, task: `Task ${i + 1}`, start: startWeek, end: endWeek };
+                } else {
+                    // Subsequent snapshots: Forward progression logic
+                    const baseTask = previous?.[i] || { start: start, end: start + 2 };
+                    const maxChange = 0.2; // Maximum 20% forward change
+                    const changeFactor = Math.random() * maxChange;
+
+                    const newStart = previous
+                        ? Math.min(maxWeeks - 1, Math.ceil(baseTask.start + baseTask.start * changeFactor))
+                        : baseTask.start;
+
+                    const newEnd = Math.min(maxWeeks, Math.ceil(baseTask.end + baseTask.end * changeFactor));
+
+                    start = newEnd; // Ensure next task starts after this one
+                    return { id: i + 1, task: `Task ${i + 1}`, start: newStart, end: newEnd };
+                }
+            });
+        };
+
+        // Generate the snapshots
+        const snapshots = [generateSnapshot(null, true)]; // First snapshot with restriction
+        for (let i = 1; i < 5; i++) {
+            snapshots.push(generateSnapshot(snapshots[i - 1]));
+        }
+
+        const ganttChart = document.getElementById("gantt-chart");
+        const taskNamesContainer = document.getElementById("task-names");
+        const timeSlider = document.getElementById("time-slider");
+        const currentSnapshot = document.getElementById("current-snapshot");
+        const weekNumbers = document.getElementById("week-numbers");
+        const previousButton = document.getElementById("previous");
+        const nextButton = document.getElementById("next");
+
+        const renderWeekNumbers = () => {
+            weekNumbers.innerHTML = "";
+            for (let i = 0; i < 10; i++) {
+                const week = document.createElement("div");
+                week.textContent = `Week ${i + 1}`;
+                weekNumbers.appendChild(week);
+            }
+        };
+
+        const renderTaskNames = () => {
+            taskNamesContainer.innerHTML = "";
+            for (let i = 0; i < 10; i++) {
+                const taskName = document.createElement("div");
+                taskName.textContent = `Task ${i + 1}`;
+                taskNamesContainer.appendChild(taskName);
+            }
+        };
+
+        const renderGanttChart = (current, previous = null) => {
+            ganttChart.innerHTML = "";
+
+            current.forEach(task => {
+                const bar = document.createElement("div");
+                bar.className = "gantt-bar";
+
+                if (previous) {
+                    const prevTask = previous.find(t => t.id === task.id);
+                    if (!prevTask) {
+                        bar.classList.add("added");
+                    } else if (prevTask.start !== task.start || prevTask.end !== task.end) {
+                        bar.classList.add("updated");
+                    }
+                } else {
+                    bar.classList.add("added");
+                }
+
+                bar.style.gridRow = task.id;
+                bar.style.left = (task.start * 10) + "%";
+                bar.style.width = ((task.end - task.start) * 10) + "%";
+                ganttChart.appendChild(bar);
+            });
+        };
+
+        const updateSnapshot = (index) => {
+            currentSnapshot.textContent = `Snapshot ${index}`;
+            const current = snapshots[index];
+            const previous = snapshots[index - 1] || null;
+            renderGanttChart(current, previous);
+            timeSlider.value = index;
+        };
+
+        let currentIndex = 0;
+
+        timeSlider.addEventListener("input", (e) => {
+            currentIndex = parseInt(e.target.value, 10);
+            updateSnapshot(currentIndex);
+        });
+
+        previousButton.addEventListener("click", () => {
+            if (currentIndex > 0) {
+                currentIndex -= 1;
+                updateSnapshot(currentIndex);
+            }
+        });
+
+        nextButton.addEventListener("click", () => {
+            if (currentIndex < snapshots.length - 1) {
+                currentIndex += 1;
+                updateSnapshot(currentIndex);
+            }
+        });
+
+        renderWeekNumbers();
+        renderTaskNames();
+        updateSnapshot(currentIndex);
+    </script>
+</body>
+</html>
